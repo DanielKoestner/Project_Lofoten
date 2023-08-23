@@ -1,0 +1,181 @@
+RELEASE NOTES FOR USERS OF THE OneArgo-Mat TOOLBOX
+
+Version 1.0.3
+
+This version includes two bug fixes:
+Previously, the overall maximum time for time series plots for 
+multiple floats was incorrect.
+For profile and time series plots with a second variable in adjusted
+mode, an error occurred in the creation of the variable name for
+the adjusted data.
+
+
+Version 1.0.2 / 1.0.1
+
+This version is almost identical to version 1.3 of the BGC-Argo-Mat
+toolbox (described below). The only change is that the assigned setting
+of Settings.default_type in initialize_argo was changed from
+'bgc' to 'all', and the header was adapted to OneArgo-Mat.
+
+==========================================================================
+
+RELEASE NOTES FOR USERS OF THE BGC_ARGO_MAT TOOLBOX
+
+Version 1.3
+
+This version expands access to all Argo float data. The select_profiles
+function now has an additional optional argument 'type', whose value can
+be set to either 'bgc', 'phys' (core and deep),  or 'all'.
+If the type is not specified, but sensors are, the type will be set
+to 'bgc' if sensors other than pressure, temperature, and/or salinity are
+selected. In all other cases the default type is Settings.default_type,
+which is set in initialize_argo ('bgc' by default).
+
+Previously written scripts that use select_profiles calls that implicitly
+assume BGC only floats (but not specify BGC sensors) should either have
+Settings.default_type set to 'bgc' or have 'type','bgc' added to
+the calls to the select_profiles function.
+
+In previous versions, all floats that are listed in the Sprof index
+file were considered BGC floats. However, there are (183, as of
+April 2022) floats that are listed in the Sprof index file, but
+have only physical (pressure, temperature, salinity) sensors. These
+will now be labeled as physical floats.
+
+For BGC floats, only Sprof (not prof) files will be downloaded and used,
+even if only physical variables (p, T, S) are currently used for plots etc.
+
+Note that there is no distinction between core and deep floats in the
+index files. Therefore, if a search for deep floats is conducted,
+an appropriate depth value must be specified as an argument to the
+select_profiles function (>2000 dbar).
+
+New functions download_tech_files and download_traj_files download
+*tech.nc and *traj files from the GDAC. Extraction of information
+from these files must be performed outside of the toolbox.
+
+Version 1.2
+
+The select_profiles function can now be called with additional
+optional selection criteria: The DAC (data access center responsible
+for a float), multiple sensors, a minimum number of profiles matching
+all other search criteria, and a list of floats that must match the
+other specified criteria.
+
+Functions select_profiles, load_float_data, and show_trajectories
+will now all interpolate missing positions (marked with value 9
+in the POSITION_QC field) if possible from surrounding good
+postition values. This can be suppressed by adding option
+'interp_lonlat','no' to these function calls. Note that the
+values in the Sprof file are not modified by this interpolation.
+For trajectory plots, estimated positions (either done by the
+toolbox or if the POSITION_QC value in the Sprof file is 8)
+can be marked in gray (or another color, set in initialize_argo).
+
+This version adds a new type of plot (time series) that can be used
+either per float or with multiple floats in one plot. If it is used
+to plot each float's time series separately, a second variable can
+be plotted for comparison.
+
+For profile plots a second variable can be shown for comparison.
+(NOTE that this feature requires Matlab R2019b or later if the
+two variables are of different types, e.g., 'DOXY' and 'NITRATE'.
+Two variables of the same type, e.g., 'DOXY' and 'DOXY2' can
+be plotted with R2016b or later.)
+The color scheme for profile plots was modified and can now be
+easily adjusted by changing the default values in initialize_argo.
+A depth range can now be specified.
+
+For section plots start and end date as well as a depth range
+can now be spcecified.
+
+New options are available for trajectory plots: lines between
+profiles, size of the markers for profiles, and the legend can be
+suppressed.
+
+The tutorial script was renamed to Tutorial.m, and several other
+scripts were added to show additional features:
+Comp_doxy_doxy2.m
+Show_deep_floats.m
+Show_doxy_rmode.m
+Show_missing_lonlat.m
+Show_under_ice.m
+
+initialize_argo will now add sensors that were not listed in the code
+but were found in the index file.
+
+New function list_sensors shows either all available sensors across
+the fleet of all floats or the sensors that are available on all
+of the specified floats.
+
+New function download_meta_files downloads *meta.nc files from the
+GDAC. Extraction of information from these files must be performed
+outside of the toolbox.
+
+Auxiliary variables (density and mixed layer depth) will now be based
+on raw pressure, temperature, and salinity if the underlying plot
+uses raw variables. Potential density instead of in situ density
+is used now.
+
+
+Version 1.1 (December 1, 2021)
+
+The most important change since version 1.0 regards the evaluation of
+the index file (argo_synthetic-profile_index.txt). Previously, its
+information was used to determine the number of profiles for each float
+and the availability of sensors. Now it is only used for an initial
+selection of potential floats. Then the matching Sprof files are
+downloaded (if necessary), and the indices of matching profiles are
+determined from the Sprof file.
+This required a change in all functions and scripts that call function
+select_profiles. The previous call signature was
+function [profiles,floats] = select_profiles(lon_lim,lat_lim,...
+    start_date,end_date,varargin)
+The new call signature is
+function [float_ids, float_profs] = select_profiles(lon_lim,lat_lim,...
+    start_date,end_date,varargin)
+That is, the previous second return value is now the first return value.
+Instead of a global profile index (the previous first return value) there
+is now a cell array with per-float profile indices as the second return
+value. This cell array can be used directly as value for the
+'float_profs' key in variable arguments in calls to functions
+show_trajectories, show_profiles, show_sections, load_float_data and
+get_lon_lat_time.
+The total number of matching profiles can be computed with, e.g.:
+num2str(sum(cellfun('length',float_profs)))
+The p2f and fprofid members of global Sprof were deleted.
+
+The Float.wmoid array is now stored as numbers instead of strings.
+
+The Sprof.date array is now stored as the original date strings, so
+to get the previous format (Matlab datenum, i.e., days since 1/1/0000),
+the values need to be converted with the datenum function, e.g.:
+datenum(Sprof.date(profile_ids), 'yyyymmddHHMMSS')
+This call can be used to retrieve the datenum values for selected floats:
+[~, ~, date] = get_lon_lat_time(floats, float_profs);
+An example for finding profiles for a specific month can be found in
+main_workshop.m
+
+initialize_argo.m has some sections rearranged, so that all user-specific
+settings are at the beginning of the function in a clearly delineated block.
+
+show_profiles, show_sections, show_trajectories:
+The first argument must always be an array of float IDs.
+Variable option 'type' is obsolete and will be ignored. Subsets of
+profiles can be specified with the 'float_profs',float_profs key/value option.
+main_workshop.m was updated to show the revised way of calling these functions.
+The 'png' option can be used to create png files of all plots.
+
+show_trajectories has a new option 'position' with possible values 'first' or
+'last' to show only the first or last position of each specified float.
+It also has a new option 'title' that allows the user to specify a custom
+title for the plot (default is "Float trajectories").
+
+select_profiles now allows the selection of floats and profiles (in addition
+to lon/lat/time and sensor) by 'ocean' ('A', 'P', or 'I') and 'mode'
+('R' = real time, 'A' = adjusted, 'D' = delayed mode; any combination
+of these can be used).
+
+qc_filter is a new function that can be used to filter variables by their
+QC flags. It takes the Data structure that was returned from load_float_data
+and returns an equivalent Data structure with the QC flags applied.

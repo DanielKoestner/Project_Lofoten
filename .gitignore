@@ -1,0 +1,11 @@
+# Ignore datafiles
+matfiles
+
+# Ignore Profiles
+Profiles
+
+#Ignore Figures
+Figures
+
+#Index
+Index
